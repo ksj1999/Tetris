@@ -307,4 +307,7 @@ $RECYCLE.BIN/
 # dotenv environment variable files
 .env
 
+# dotenv environment variable files
+keys
+
 # End of https://www.toptal.com/developers/gitignore/api/windows,python,flask,visualstudiocode
