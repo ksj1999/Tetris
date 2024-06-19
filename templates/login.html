@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-image: url('/static/images/aerial-view-of-container-cargo-ship-in-sea (1).jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+        .login-container {
+            background-color: rgba(68, 68, 68, 0.8); /* 투명도를 추가하여 배경과 구분 */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .control {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>환영합니다</h2>
+        <form method="POST" action="/">
+            <div class="control">
+                <label for="driver-id">운전자 ID</label>
+                <input type="number" id="driver-id" name="driverId" required>
+            </div>
+            <div class="control">
+                <label for="crane-id">크레인 번호</label>
+                <input type="number" id="crane-id" name="craneId" required>
+            </div>
+            <div class="control">
+                <label for="ship-id">선박 번호</label>
+                <input type="number" id="ship-id" name="shipId" required>
+            </div>
+            <button type="submit">바로가기</button>
+        </form>
+    </div>
+</body>
+</html>

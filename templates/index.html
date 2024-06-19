@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YOLO Object Detection</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background-image: url('/static/images/aerial-view-of-container-cargo-ship-in-sea.jpg'); /* 배경 이미지 추가 */
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            margin: 0;
+        }
+        .status-message {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .bottom-panel {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            background-color: rgba(74, 74, 74, 0.8); /* 투명도를 추가하여 배경과 구분 */
+        }
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        .right-panel {
+            display: flex;
+            flex-direction: row; /* 가로 배치 */
+            align-items: center; /* 동일 높이 */
+            gap: 10px; /* 간격 추가 */
+        }
+        .control {
+            margin-bottom: 15px;
+        }
+        .control button {
+            width: 150px;
+            padding: 10px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .control a {
+            width: calc(100% - 40px); /* 좌우 패딩을 제외한 전체 너비 */
+            padding: 10px;
+            background-color: #ff8c00; /* 주황색으로 변경 */
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            display: inline-block;
+        }
+        .control button:hover,
+        .control a:hover {
+            background-color: #4cae4c;
+        }
+        .control a:hover {
+            background-color: #e07b00; /* 주황색 hover 색상 */
+        }
+        .video-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            padding: 20px;
+        }
+        .video-container img {
+            width: 800px;
+            height: 600px;
+            border: 2px solid #000;
+        }
+        .model-latency-container {
+            display: flex;
+            align-items: center;
+        }
+        .model-latency-container .control {
+            margin-right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-message" id="status-message"></div>
+    <div class="video-container">
+        <img id="video-feed" src="/video/video_feed">
+    </div>
+    <div class="bottom-panel">
+        <div class="left-panel">
+            <div class="model-latency-container">
+                <div class="control">
+                    <label for="model-selector">모델 선택</label>
+                    <select id="model-selector"></select>
+                </div>
+                <div class="control">
+                    <label for="latency-slider">속도 조절: <span id="latency-value">0</span> ms</label>
+                    <input type="range" id="latency-slider" min="0" max="1000" value="0">
+                </div>
+            </div>
+            <div class="control">
+                <a href="https://dashboard-kwonjangwoo-ews.education.wise-paas.com/frame/%EC%BB%A8%ED%85%8C%EC%9D%B4%EB%84%88%20%EC%A0%81%EC%9E%AC%20%ED%86%B5%ED%95%A9%20%EA%B4%80%EC%A0%9C?orgId=3&language=en-US&theme=gray&panelTitleShow=false&selected=AB1EBD3A" target="_blank">DashBoard 바로가기</a>
+            </div>
+        </div>
+        <div class="right-panel">
+            <div class="control">
+                <button id="start-job-btn">적재 시작</button>
+            </div>
+            <div class="control">
+                <button id="end-job-btn">적재 완료</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const driverId = "{{ driverId }}";
+            const craneId = "{{ craneId }}";
+            const shipId = "{{ shipId }}";
+
+            console.log(`Driver ID: ${driverId}, Crane ID: ${craneId}, Ship ID: ${shipId}`);
+
+            // 모델 목록 가져오기
+            fetch('/get_models')
+                .then(response => response.json())
+                .then(models => {
+                    const modelSelector = document.getElementById('model-selector');
+                    models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model;
+                        option.textContent = model;
+                        modelSelector.appendChild(option);
+                    });
+                });
+
+            document.getElementById('latency-slider').addEventListener('input', function() {
+                document.getElementById('latency-value').textContent = this.value;
+            });
+            document.getElementById('latency-slider').addEventListener('change', setLatency);
+            document.getElementById('start-job-btn').addEventListener('click', startJob);
+            document.getElementById('end-job-btn').addEventListener('click', endJob);
+        });
+
+        function setLatency() {
+            const latency = document.getElementById('latency-slider').value;
+            fetch('/prediction/set_latency', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `latency=${latency}`
+            });
+        }
+
+        function startPrediction() {
+            setStatusMessage("적재가 시작되었습니다. 정렬 탐지 중...");
+            return fetch('/prediction/start_prediction', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                }
+            }).then(() => {
+                document.getElementById('video-feed').src = "/video/video_feed";
+            });
+        }
+
+        function stopPrediction() {
+            setStatusMessage("적재 종료...");
+            return fetch('/prediction/stop_prediction', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                }
+            });
+        }
+
+        function startJob() {
+            const driverId = "{{ driverId }}";
+            const craneId = "{{ craneId }}";
+            const shipId = "{{ shipId }}";
+
+            console.log(`Start Job with Driver ID: ${driverId}, Crane ID: ${craneId}, Ship ID: ${shipId}`);
+
+            startPrediction().then(() => {
+                fetch('/database/start_job', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        driverId: driverId,
+                        craneId: craneId,
+                        shipId: shipId
+                    })
+                }).then(response => response.json())
+                  .then(data => {
+                      if (data.status === "Job started successfully") {
+                          console.log(`Job started with stackId: ${data.stackId}`);
+                      } else {
+                          console.error(`Failed to start job: ${data.error}`);
+                      }
+                  });
+            });
+        }
+
+        function endJob() {
+            stopPrediction().then(() => {
+                fetch('/database/end_job', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                }).then(response => response.json())
+                  .then(data => {
+                      if (data.status === "Job ended successfully") {
+                          console.log(`Job ended successfully`);
+                      } else {
+                          console.error(`Failed to end job: ${data.error}`);
+                      }
+                  });
+            });
+        }
+
+        function setStatusMessage(message) {
+            const statusMessageDiv = document.getElementById('status-message');
+            statusMessageDiv.textContent = message;
+        }
+    </script>
+</body>
+</html>

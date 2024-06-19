@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sensor Data</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #7d7d7d;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            padding: 20px;
+            background-color: #4a4a4a;
+            border-radius: 10px;
+            margin-top: 50px;
+        }
+        .data {
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Sensor Data</h2>
+        <div id="sensor-data" class="data"></div>
+    </div>
+    <script>
+        function fetchSensorData() {
+            fetch('/sensor-data')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const sensorDataDiv = document.getElementById('sensor-data');
+                sensorDataDiv.textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                const sensorDataDiv = document.getElementById('sensor-data');
+                sensorDataDiv.textContent = 'Error fetching sensor data: ' + error.message;
+                console.error('Error fetching sensor data:', error);
+            });
+        }
+
+        setInterval(fetchSensorData, 3000); // 3초마다 데이터 갱신
+        fetchSensorData(); // 초기 데이터 로드
+    </script>
+</body>
+</html>
