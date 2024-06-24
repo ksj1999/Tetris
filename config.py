@@ -6,11 +6,11 @@ import cv2
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # 학습된 모델 가져오기 -> best.pt
-model = YOLO("./models/best_v8_2.pt")
+model = YOLO("./models/best_v8_3.pt")
 
 # 비디오 캡처
 
-camera = cv2.VideoCapture(1)
+camera = cv2.VideoCapture(0)
 
 
 # 전역 변수 초기화

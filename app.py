@@ -9,7 +9,7 @@ import config
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
 
 # Flask 애플리케이션 생성 및 설정
 app = Flask(__name__)

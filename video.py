@@ -51,7 +51,7 @@ def process_frame(frame):
     prediction_data = {}
 
     for i, (box, cls, conf) in enumerate(zip(boxes, classes, confidences)):
-        if conf < 0.65:
+        if conf < 0.60:
             continue
         x1, y1, x2, y2 = box
         name = names[int(cls)]
@@ -87,34 +87,29 @@ def process_frame(frame):
             cv2.putText(frame, f"({int(x_center)}, {int(y_center)})", (int(x_center), int(y_center) - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, text_scale, center_color, text_thickness)
 
-            # # 바운딩 박스 위에 텍스트 표시 (ID, 클래스 이름, 정확도)
-            # label = f'id:{i} {name} {conf:.2f}'
-            # label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, text_scale, text_thickness)[0]
-            # label_x = int(x1)
-            # label_y = int(y2) + label_size[1] + 10 if y2 < frame.shape[0] - 10 else int(y2) - 10
-
-            # cv2.rectangle(frame, (label_x, label_y - label_size[1] - 2), (label_x + label_size[0], label_y + 2),
-            #               background_color, cv2.FILLED)
-            # cv2.putText(frame, label, (label_x, label_y), cv2.FONT_HERSHEY_SIMPLEX, text_scale, (0, 0, 0), text_thickness)
-
     # 정렬 여부 판단
     def check_alignment(castings):
         if len(castings) > 1:
             avg_x = sum(cc[0] for cc in castings) / len(castings)
-            for cc in castings:
-                if abs(cc[0] - avg_x) > 10:
-                    return False
-        return True
+            max_deviation = max(abs(cc[0] - avg_x) for cc in castings)
+            return max_deviation
+        return 0
 
-    is_aligned = (check_alignment(left_top_castings) and
-                  check_alignment(left_bottom_castings) and
-                  check_alignment(right_top_castings) and
-                  check_alignment(right_bottom_castings))
+    max_deviation_left_top = check_alignment(left_top_castings)
+    max_deviation_left_bottom = check_alignment(left_bottom_castings)
+    max_deviation_right_top = check_alignment(right_top_castings)
+    max_deviation_right_bottom = check_alignment(right_bottom_castings)
 
-    if is_aligned:
+    max_deviation = max(max_deviation_left_top, max_deviation_left_bottom, max_deviation_right_top, max_deviation_right_bottom)
+
+    if max_deviation < 7:
         alignment_text = "All Corner Castings Aligned"
         alignment_color = (0, 255, 0)
         prediction_data['stackResult'] = 1
+    elif 7 <= max_deviation <= 11:
+        alignment_text = "Corner Castings Warning"
+        alignment_color = (0, 255, 255)
+        prediction_data['stackResult'] = 0
     else:
         alignment_text = "Corner Castings Not Aligned"
         alignment_color = (0, 0, 255)
